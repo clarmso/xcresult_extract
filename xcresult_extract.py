@@ -42,9 +42,10 @@ def main():
     test_id = find_test_id(xcresult_path)
     summary_id = find_summary_id(xcresult_path, test_id)
     log = export_log(xcresult_path, summary_id)
-    sys.stdout.write("Found metrics: " + log + "\n")
     device_info = find_device_info(xcresult_path)
-    sys.stdout.write("Device: " + device_info + "\n")
+    #sys.stdout.write("Device: " + device_info + "\n")
+    #sys.stdout.write("Found metrics: " + log + "\n")
+    sys.stdout.write(device_info + "," + log + "\n")
     #print(*log.split(','),sep='\n')
 
 # Most flags on the xcodebuild command-line are uninteresting, so only pull
@@ -269,6 +270,10 @@ def collect_log_output(activity_log, result):
     activity_log: Parsed JSON of an xcresult activity log.
     result: An array into which all log data should be appended.
   """
+
+  test_name = activity_log.get('identifier')
+  if test_name:
+    result.append(test_name['_value'])
 
   duration = activity_log.get('duration')
   if duration:
