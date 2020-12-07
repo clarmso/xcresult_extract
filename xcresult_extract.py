@@ -40,13 +40,15 @@ def main():
     scheme = flags['-scheme']
     xcresult_path = find_xcresult_path(project, scheme)
     test_id = find_test_id(xcresult_path)
-    summary_id = find_summary_id(xcresult_path, test_id)
-    log = export_log(xcresult_path, summary_id)
-    device_info = find_device_info(xcresult_path)
-    #sys.stdout.write("Device: " + device_info + "\n")
-    #sys.stdout.write("Found metrics: " + log + "\n")
-    sys.stdout.write(device_info + "," + log + "\n")
-    #print(*log.split(','),sep='\n')
+    tests_count = find_test_count(xcresult_path)
+    for test in range(int(tests_count)):
+      summary_id = find_summary_id(xcresult_path, test_id, int(test))
+      log = export_log(xcresult_path, summary_id)
+      device_info = find_device_info(xcresult_path)
+      #sys.stdout.write("Device: " + device_info + "\n")
+      #sys.stdout.write("Found metrics: " + log + "\n")
+      sys.stdout.write(device_info + "," + log + "\n")
+      #print(*log.split(','),sep='\n')
 
 # Most flags on the xcodebuild command-line are uninteresting, so only pull
 # flags with known behavior with names in this set.
@@ -208,7 +210,24 @@ def find_device_info(xcresult_path):
   actions = parsed['actions']['_values']
   action = actions[-1]
 
-  result = action['runDestination']['targetDeviceRecord']['modelName']['_value']
+  result = action['runDestination']['targetDeviceRecord']['modelUTI']['_value']
+  return result
+
+def find_test_count(xcresult_path):
+  """ Finds the total subtest count.
+
+  Args:
+    xcresult_path: The path to an xcresult bundle.
+    
+  Returns:
+    The total subtest count
+  """
+  parsed = xcresulttool_json('get', '--path', xcresult_path)
+  actions = parsed['metrics']['testsCount']  
+
+  result = action = parsed['metrics']['testsCount']['_value']
+  _logger.debug('Using subtest count: %s', result)
+
   return result
 
 def find_test_id(xcresult_path):
@@ -228,11 +247,13 @@ def find_test_id(xcresult_path):
   _logger.debug('Using test id %s', result)
   return result
 
-def find_summary_id(xcresult_path, test_id):
+def find_summary_id(xcresult_path, test_id, sub_test):
   """Finds the id summary of the last action's tests.
 
   Args:
+    xcresult_path: The path to an xcresult bundle.
     test_id: The id of the test output, suitable for use with xcresulttool get --id.
+    sub_test: The test number
 
   Returns:
     The summary id of the test output, suitable for use with xcresulttool get --id.
@@ -241,7 +262,7 @@ def find_summary_id(xcresult_path, test_id):
   actions = parsed['summaries']['_values']
   action = actions[-1]
 
-  result = action['testableSummaries']['_values'][0]['tests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][0]['summaryRef']['id']['_value']
+  result = action['testableSummaries']['_values'][0]['tests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][sub_test]['summaryRef']['id']['_value']
   _logger.debug('Using summay test id %s', result)
   return result
 
