@@ -34,21 +34,23 @@ def main():
 
   # If the result bundle path is specified in the xcodebuild flags, use that
   # otherwise, deduce
+  project = project_from_project_path(flags['-project'])
+  scheme = flags['-scheme']
+
   xcresult_path = flags.get('-resultBundlePath')
   if xcresult_path is None:
-    project = project_from_project_path(flags['-project'])
-    scheme = flags['-scheme']
     xcresult_path = find_xcresult_path(project, scheme)
-    test_id = find_test_id(xcresult_path)
-    tests_count = find_test_count(xcresult_path)
-    for test in range(int(tests_count)):
-      summary_id = find_summary_id(xcresult_path, test_id, int(test))
-      log = export_log(xcresult_path, summary_id)
-      device_info = find_device_info(xcresult_path)
-      #sys.stdout.write("Device: " + device_info + "\n")
-      #sys.stdout.write("Found metrics: " + log + "\n")
-      sys.stdout.write(device_info + "," + log + "\n")
-      #print(*log.split(','),sep='\n')
+  
+  test_id = find_test_id(xcresult_path)
+  tests_count = find_test_count(xcresult_path)
+  for test in range(int(tests_count)):
+    summary_id = find_summary_id(xcresult_path, test_id, int(test))
+    log = export_log(xcresult_path, summary_id)
+    device_info = find_device_info(xcresult_path)
+    #sys.stdout.write("Device: " + device_info + "\n")
+    #sys.stdout.write("Found metrics: " + log + "\n")
+    sys.stdout.write(device_info + "," + log + "\n")
+    #print(*log.split(','),sep='\n')
 
 # Most flags on the xcodebuild command-line are uninteresting, so only pull
 # flags with known behavior with names in this set.
