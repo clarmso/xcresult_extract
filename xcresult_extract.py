@@ -225,9 +225,8 @@ def find_test_count(xcresult_path):
     The total subtest count
   """
   parsed = xcresulttool_json('get', '--path', xcresult_path)
-  actions = parsed['metrics']['testsCount']  
 
-  result = action = parsed['metrics']['testsCount']['_value']
+  result = parsed['metrics']['testsCount']['_value']
   _logger.debug('Using subtest count: %s', result)
 
   return result
@@ -304,7 +303,7 @@ def collect_log_output(activity_log, result):
     result.append(output)
 
   performance_metrics = activity_log.get('performanceMetrics')
-  if performance_metrics:
+  if not performance_metrics is None:
     metrics = performance_metrics.get('_values')
     for metric in metrics:
       measurement = metric.get('measurements')
