@@ -36,6 +36,7 @@ def main():
   # otherwise, deduce
   project = project_from_project_path(flags['-project'])
   scheme = flags['-scheme']
+  defaultValues = ["testName", "Duration", "Disk Local Writes", "Clock Monotonic Time", "CPU Time", "Memory Physical", "CPU Instructions Retired", "Memory Peak Physical", "CPU Cycles"]
 
   xcresult_path = flags.get('-resultBundlePath')
   if xcresult_path is None:
@@ -43,14 +44,29 @@ def main():
   
   test_id = find_test_id(xcresult_path)
   tests_count = find_test_count(xcresult_path)
-  for test in range(int(tests_count)):
-    summary_id = find_summary_id(xcresult_path, test_id, int(test))
-    log = export_log(xcresult_path, summary_id)
+  print("Number of Tests=" + tests_count)
+  listData = []
+
+  summary_id = find_summary_id(xcresult_path, test_id, int(tests_count))
+  for sumID in range(len(summary_id)):
+    log = export_log(xcresult_path, summary_id[sumID])
     device_info = find_device_info(xcresult_path)
     #sys.stdout.write("Device: " + device_info + "\n")
     #sys.stdout.write("Found metrics: " + log + "\n")
     sys.stdout.write(device_info + "," + log + "\n")
-    #print(*log.split(','),sep='\n')
+
+    data = log.split(",")
+
+    createDict = zip(defaultValues, data)
+    dictOfData = dict(createDict)
+    print(dictOfData)
+    listData.append(dictOfData)
+
+  writeDataToFile(listData)
+  ''' This would be the result:
+  {'testName': 'TabsPerformanceTest/testPerfTabs1280startup()', 'cpu': '177.34', 'memory': '607491.7616000001', 'cycles': '21.7424204788', 'blabla': '0.20137628960000004', 'foo': '68.8128', 'bar': '265755.0654', 'foobar': '0.0', 'zoo': '0.0'}
+  '''
+
 
 # Most flags on the xcodebuild command-line are uninteresting, so only pull
 # flags with known behavior with names in this set.
@@ -60,6 +76,10 @@ INTERESTING_FLAGS = {
     '-project',
 }
 
+def writeDataToFile(data):
+  f = open( 'data.txt', 'w' )
+  f.write(str(data))
+  f.close()
 
 def parse_xcodebuild_flags(args):
   """Parses the xcodebuild command-line.
@@ -248,7 +268,7 @@ def find_test_id(xcresult_path):
   _logger.debug('Using test id %s', result)
   return result
 
-def find_summary_id(xcresult_path, test_id, sub_test):
+def find_summary_id(xcresult_path, test_id, tests_count):
   """Finds the id summary of the last action's tests.
 
   Args:
@@ -261,11 +281,25 @@ def find_summary_id(xcresult_path, test_id, sub_test):
   """
   parsed = xcresulttool_json('get', '--path', xcresult_path, '--id', test_id)
   actions = parsed['summaries']['_values']
-  action = actions[-1]
+  action = actions[0]
+  resultDef = []
 
-  result = action['testableSummaries']['_values'][0]['tests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][sub_test]['summaryRef']['id']['_value']
-  _logger.debug('Using summay test id %s', result)
-  return result
+  for ids in range(tests_count):
+      result = action['testableSummaries']['_values'][0]['tests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][0]['subtests']['_values'][ids]['summaryRef']['id']['_value']
+      resultDef.append(result)
+  '''
+  When tests are run from xcode UI (play button), the performance test suite is the 40th. We will always launch from command line
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[40].subtests._values[1].summaryRef.id._value
+  When tests are in several test suites...Two iterations, test suite and tests in that test suite, the total test count does not work as it is
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[1].subtests._values[0].summaryRef
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[0].subtests._values[0].summaryRef
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[1].subtests._values[0].summaryRef
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[1].subtests._values[1].summaryRef
+  x.summaries._values[0].testableSummaries._values[0].tests._values[0].subtests._values[0].subtests._values[1].subtests._values[2].summaryRef
+  '''
+  #_logger.debug('Using summay test id %s', result)
+  print(resultDef)
+  return resultDef
 
 
 def export_log(xcresult_path, summary_id):
