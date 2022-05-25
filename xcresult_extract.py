@@ -78,7 +78,7 @@ INTERESTING_FLAGS = {
 
 def writeDataToFile(data):
   f = open( 'data.txt', 'w' )
-  f.write(str(data))
+  f.write('data='+str(data))
   f.close()
 
 def parse_xcodebuild_flags(args):
